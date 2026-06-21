@@ -1,0 +1,61 @@
+[package]
+name = "esylla-auth"
+version = "0.1.0"
+edition = "2024"
+authors = ["Levi Laine <shiueo.csh@gmail.com"]
+repository = "https://github.com/esylla/esylla-auth"
+license = "MIT"
+rust-version = "1.96.0"
+description = "Authentication module for esylla — sessions, passwords, OAuth"
+
+[dependencies]
+esylla = "0.1.0"
+esylla-error = "0.1.0"
+
+axum = { version = "0.8.9", features = ["macros"] }
+axum-extra = { version = "0.12.6", features = ["cookie"] }
+utoipa = { version = "5.5.0", features = ["axum_extras"] }
+validator = { version = "0.20.0", features = ["derive"] }
+sea-orm = { version = "2.0.0-rc.41", default-features = false, features = ["macros", "with-uuid", "with-chrono"] }
+sea-orm-migration = { version = "2.0.0-rc.41", default-features = false }
+chrono = "0.4.45"
+async-trait = "0.1.89"
+tracing = "0.1.44"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
+thiserror = "2.0.18"
+argon2 = "0.5.3"
+getrandom = "0.4.3"
+sha2 = "0.11.0"
+hex = "0.4.3"
+uuid = { version = "1.23.3", features = ["v7", "serde"] }
+
+# OAuth — pulled in only with the `oauth` feature. We bridge to a modern reqwest
+# via `oauth2-reqwest` so reqwest's version is decoupled from oauth2's own pin.
+oauth2 = { version = "5.0.0", default-features = false, optional = true }
+openidconnect = { version = "4.0.1", default-features = false, optional = true }
+oauth2-reqwest = { version = "0.1.0-alpha.3", optional = true }
+reqwest = { version = "0.13.4", default-features = false, features = ["rustls", "json"], optional = true }
+url = { version = "2.5.7", optional = true }
+
+# SMTP mailer — pulled in only with the `smtp` feature. lettre delivers, minijinja
+# renders the (overridable) message templates.
+lettre = { version = "0.11.22", default-features = false, features = ["tokio1-rustls-tls", "smtp-transport", "builder"], optional = true }
+minijinja = { version = "2.21.0", optional = true }
+
+# Stateless JWT sessions — pulled in only with the `jwt` feature.
+jsonwebtoken = { version = "10.4.0", default-features = false, optional = true }
+
+[features]
+# Google/GitHub/Microsoft OAuth (authorization-code + PKCE). Off by default.
+oauth = ["dep:oauth2", "dep:openidconnect", "dep:oauth2-reqwest", "dep:reqwest", "dep:url"]
+# Default SMTP mailer (lettre + minijinja templates).
+smtp = ["dep:lettre", "dep:minijinja"]
+# Stateless JWT session strategy (alternative to opaque server-side sessions).
+jwt = ["dep:jsonwebtoken"]
+
+[dev-dependencies]
+tokio = { version = "1.43.0", features = ["full"] }
+sea-orm = { version = "2.0.0-rc.41", default-features = false, features = ["macros", "with-uuid", "with-chrono", "sqlx-sqlite", "sqlx-postgres", "runtime-tokio-rustls"] }
+tower = { version = "0.5.3", features = ["util"] }
+testcontainers-modules = { version = "0.15.0", features = ["postgres"] }
