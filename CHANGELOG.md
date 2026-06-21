@@ -27,6 +27,8 @@ Initial release.
   `OAuthProvider`s.
 - `SmtpMailer` behind the `smtp` feature (lettre + minijinja) with overridable
   templates and subjects.
+- `RedisSessionStore` behind the `redis` feature — an opaque session store over a
+  host-owned, shared Redis connection.
 - Extensibility seams: swappable `UserStore` / `SessionStore` / `Mailer` /
   `SessionStrategy`, an `AccountAdapter` (signup/login hooks and email
   normalization), and per-route selection on the module.

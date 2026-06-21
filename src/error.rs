@@ -37,7 +37,7 @@ pub enum AuthError {
     Mailer,
 
     #[esylla(status = INTERNAL_SERVER_ERROR, code = "auth.session")]
-    #[error("failed to issue session token")]
+    #[error("session backend error")]
     Session,
 
     #[esylla(status = BAD_REQUEST, code = "auth.oauth")]

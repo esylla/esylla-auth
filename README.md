@@ -61,11 +61,12 @@ the merged OpenAPI document.
 
 ## Feature flags
 
-| Flag    | Adds                                                                      |
-|---------|---------------------------------------------------------------------------|
-| `oauth` | Google/Microsoft/GitHub OAuth (`oauth2`, `openidconnect`, `reqwest`)      |
-| `smtp`  | `SmtpMailer` over SMTP with overridable templates (`lettre`, `minijinja`) |
-| `jwt`   | `JwtSessions`, a stateless session strategy (`jsonwebtoken`)              |
+| Flag    | Adds                                                                       |
+|---------|----------------------------------------------------------------------------|
+| `oauth` | Google/Microsoft/GitHub OAuth (`oauth2`, `openidconnect`, `reqwest`)       |
+| `smtp`  | `SmtpMailer` over SMTP with overridable templates (`lettre`, `minijinja`)  |
+| `jwt`   | `JwtSessions`, a stateless session strategy (`jsonwebtoken`)               |
+| `redis` | `RedisSessionStore`, an opaque session store over a shared Redis (`redis`) |
 
 The default build is email/password + opaque sessions, backed by the database the
 host already provides — no extra services required.

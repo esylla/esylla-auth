@@ -7,11 +7,12 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::error::AuthError;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SessionRecord {
     pub user_id: Uuid,
     /// Absolute expiry (unix seconds): the session is invalid past this regardless

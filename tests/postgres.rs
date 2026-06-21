@@ -35,7 +35,11 @@ async fn email_password_vertical_on_postgres() {
 
     svc.verify_email(&mailer.token(), &ctx()).await.unwrap();
     let session = svc.login("a@b.com", "longpassword", &ctx()).await.unwrap();
-    let user = svc.authenticate(&session).await.unwrap().expect("session valid");
+    let user = svc
+        .authenticate(&session)
+        .await
+        .unwrap()
+        .expect("session valid");
     assert_eq!(user.email, "a@b.com");
 
     // Changing the password invalidates the existing session.

@@ -53,9 +53,17 @@ pub async fn callback(
 ) -> Result<(CookieJar, Redirect), AuthError> {
     let cookie_state = cookie::oauth_state(&jar, &services.config.cookie);
     let session = services
-        .oauth_callback(&provider, &query.code, &query.state, cookie_state.as_deref())
+        .oauth_callback(
+            &provider,
+            &query.code,
+            &query.state,
+            cookie_state.as_deref(),
+        )
         .await?;
     let jar = cookie::clear_oauth_state(jar, &services.config.cookie);
     let jar = cookie::set_session(jar, &services.config.cookie, session);
-    Ok((jar, Redirect::to(&services.config.oauth.post_login_redirect)))
+    Ok((
+        jar,
+        Redirect::to(&services.config.oauth.post_login_redirect),
+    ))
 }

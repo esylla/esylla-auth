@@ -49,7 +49,10 @@ pub(crate) async fn consume<C: ConnectionTrait>(
     raw: &str,
 ) -> Result<PendingRegistration, AuthError> {
     let hash = token::hash(raw);
-    let Some(model) = pending_registration::Entity::find_by_id(hash).one(db).await? else {
+    let Some(model) = pending_registration::Entity::find_by_id(hash)
+        .one(db)
+        .await?
+    else {
         return Err(AuthError::InvalidToken);
     };
     let deleted = pending_registration::Entity::delete_by_id(model.token_hash.clone())

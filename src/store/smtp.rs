@@ -120,7 +120,10 @@ impl SmtpMailer {
             .header(ContentType::TEXT_HTML)
             .body(body)
             .map_err(|_| AuthError::Mailer)?;
-        self.transport.send(email).await.map_err(|_| AuthError::Mailer)?;
+        self.transport
+            .send(email)
+            .await
+            .map_err(|_| AuthError::Mailer)?;
         Ok(())
     }
 }

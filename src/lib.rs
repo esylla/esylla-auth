@@ -30,8 +30,15 @@ pub use jwt::JwtSessions;
 pub use module::Auth;
 pub use service::AuthServices;
 pub use session::{OpaqueSessions, SessionStrategy};
+#[cfg(feature = "redis")]
+pub use store::RedisSessionStore;
 pub use store::{
     DbSessionStore, DbUserStore, Mailer, SessionRecord, SessionStore, User, UserStore,
 };
 #[cfg(feature = "smtp")]
 pub use store::{SmtpConfig, SmtpMailer};
+
+/// Re-export of the `redis` crate so the host builds its `ConnectionManager` with
+/// the exact version `RedisSessionStore` expects.
+#[cfg(feature = "redis")]
+pub use ::redis;

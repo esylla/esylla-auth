@@ -26,7 +26,10 @@ impl AuthServices {
                 .clone()
                 .map(|config| Arc::new(GitHub::new(config)) as Arc<dyn OAuthProvider>),
             "google" => configured.google.clone().map(|config| {
-                let issuer = config.issuer.clone().unwrap_or_else(|| GOOGLE_ISSUER.to_owned());
+                let issuer = config
+                    .issuer
+                    .clone()
+                    .unwrap_or_else(|| GOOGLE_ISSUER.to_owned());
                 Arc::new(Oidc::new("google", issuer, config)) as Arc<dyn OAuthProvider>
             }),
             // Microsoft is tenant-scoped, so the issuer must be configured
@@ -47,7 +50,10 @@ impl AuthServices {
     /// `state` (the caller stores it in a browser cookie to bind the flow); the
     /// PKCE verifier and nonce are persisted server-side for the callback.
     #[tracing::instrument(skip_all, fields(provider = provider_name))]
-    pub async fn oauth_authorize(&self, provider_name: &str) -> Result<(String, String), AuthError> {
+    pub async fn oauth_authorize(
+        &self,
+        provider_name: &str,
+    ) -> Result<(String, String), AuthError> {
         let provider = self.provider(provider_name)?;
         let request = provider.begin().await?;
         oauth::issue(
@@ -91,58 +97,58 @@ impl AuthServices {
             .complete(code.to_owned(), stored.pkce_verifier, stored.nonce)
             .await?;
 
-        let user_id = match oauth::connection::find_user(
-            &self.db,
-            &identity.provider,
-            &identity.account_id,
-        )
-        .await?
-        {
-            Some(user_id) => user_id,
-            None => {
-                // First time with this provider account: link to an existing user
-                // by the provider-verified email, or provision a new one.
-                let email = identity.email.as_deref().ok_or(AuthError::OAuth)?;
-                let email = self.adapter.normalize_email(email);
-                let user_id = match self.users.find_by_email(&email).await? {
-                    Some(user) => {
-                        // Only link into a local account that has itself verified
-                        // this email. Auto-linking into an unverified account would
-                        // let a squatter who pre-registered the address capture the
-                        // OAuth login (account takeover).
-                        if !user.email_verified {
-                            return Err(AuthError::EmailTaken);
+        let user_id =
+            match oauth::connection::find_user(&self.db, &identity.provider, &identity.account_id)
+                .await?
+            {
+                Some(user_id) => user_id,
+                None => {
+                    // First time with this provider account: link to an existing user
+                    // by the provider-verified email, or provision a new one.
+                    let email = identity.email.as_deref().ok_or(AuthError::OAuth)?;
+                    let email = self.adapter.normalize_email(email);
+                    let user_id = match self.users.find_by_email(&email).await? {
+                        Some(user) => {
+                            // Only link into a local account that has itself verified
+                            // this email. Auto-linking into an unverified account would
+                            // let a squatter who pre-registered the address capture the
+                            // OAuth login (account takeover).
+                            if !user.email_verified {
+                                return Err(AuthError::EmailTaken);
+                            }
+                            user.id
                         }
-                        user.id
-                    }
-                    None => self.provision_oauth_user(&email).await?,
-                };
-                match oauth::connection::link(
-                    &self.db,
-                    user_id,
-                    &identity.provider,
-                    &identity.account_id,
-                )
-                .await
-                {
-                    Ok(()) => user_id,
-                    // A concurrent callback already linked this provider account;
-                    // resolve to whoever won the race.
-                    Err(AuthError::Database(ref err))
-                        if matches!(err.sql_err(), Some(SqlErr::UniqueConstraintViolation(_))) =>
+                        None => self.provision_oauth_user(&email).await?,
+                    };
+                    match oauth::connection::link(
+                        &self.db,
+                        user_id,
+                        &identity.provider,
+                        &identity.account_id,
+                    )
+                    .await
                     {
-                        oauth::connection::find_user(
-                            &self.db,
-                            &identity.provider,
-                            &identity.account_id,
-                        )
-                        .await?
-                        .ok_or(AuthError::OAuth)?
+                        Ok(()) => user_id,
+                        // A concurrent callback already linked this provider account;
+                        // resolve to whoever won the race.
+                        Err(AuthError::Database(ref err))
+                            if matches!(
+                                err.sql_err(),
+                                Some(SqlErr::UniqueConstraintViolation(_))
+                            ) =>
+                        {
+                            oauth::connection::find_user(
+                                &self.db,
+                                &identity.provider,
+                                &identity.account_id,
+                            )
+                            .await?
+                            .ok_or(AuthError::OAuth)?
+                        }
+                        Err(err) => return Err(err),
                     }
-                    Err(err) => return Err(err),
                 }
-            }
-        };
+            };
 
         let session = self.session.issue(user_id).await?;
         tracing::info!(user_id = %user_id, "user logged in via oauth");

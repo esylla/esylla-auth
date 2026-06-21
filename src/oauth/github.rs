@@ -41,13 +41,16 @@ impl GitHub {
         >,
         AuthError,
     > {
-        Ok(BasicClient::new(ClientId::new(self.config.client_id.clone()))
-            .set_client_secret(ClientSecret::new(self.config.client_secret.clone()))
-            .set_auth_uri(AuthUrl::new(AUTHORIZE_URL.to_owned()).map_err(|_| AuthError::OAuth)?)
-            .set_token_uri(TokenUrl::new(TOKEN_URL.to_owned()).map_err(|_| AuthError::OAuth)?)
-            .set_redirect_uri(
-                RedirectUrl::new(self.config.redirect_uri.clone()).map_err(|_| AuthError::OAuth)?,
-            ))
+        Ok(
+            BasicClient::new(ClientId::new(self.config.client_id.clone()))
+                .set_client_secret(ClientSecret::new(self.config.client_secret.clone()))
+                .set_auth_uri(AuthUrl::new(AUTHORIZE_URL.to_owned()).map_err(|_| AuthError::OAuth)?)
+                .set_token_uri(TokenUrl::new(TOKEN_URL.to_owned()).map_err(|_| AuthError::OAuth)?)
+                .set_redirect_uri(
+                    RedirectUrl::new(self.config.redirect_uri.clone())
+                        .map_err(|_| AuthError::OAuth)?,
+                ),
+        )
     }
 }
 

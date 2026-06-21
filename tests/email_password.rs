@@ -58,8 +58,12 @@ async fn does_not_leak_account_existence() {
         Err(AuthError::InvalidCredentials)
     ));
     svc.forgot_password("nobody@x.com").await.unwrap();
-    svc.signup("dup@x.com", "longpassword", &ctx()).await.unwrap();
-    svc.signup("dup@x.com", "longpassword", &ctx()).await.unwrap();
+    svc.signup("dup@x.com", "longpassword", &ctx())
+        .await
+        .unwrap();
+    svc.signup("dup@x.com", "longpassword", &ctx())
+        .await
+        .unwrap();
 }
 
 #[tokio::test]
@@ -75,6 +79,62 @@ async fn reset_invalidates_sessions() {
         .await
         .unwrap();
 
+    assert!(svc.authenticate(&session).await.unwrap().is_none());
+    assert!(matches!(
+        svc.login("c@d.com", "oldpassword", &ctx()).await,
+        Err(AuthError::InvalidCredentials)
+    ));
+    svc.login("c@d.com", "newpassword", &ctx()).await.unwrap();
+}
+
+#[tokio::test]
+async fn email_is_normalized() {
+    let (svc, mail) = setup().await;
+
+    // Sign up with mixed case / whitespace; the account is stored normalized.
+    svc.signup("  Bob@Example.COM ", "longpassword", &ctx())
+        .await
+        .unwrap();
+    svc.verify_email(&mail.token(), &ctx()).await.unwrap();
+
+    // A different-case login resolves the same account.
+    let session = svc
+        .login("bob@example.com", "longpassword", &ctx())
+        .await
+        .unwrap();
+    assert_eq!(
+        svc.authenticate(&session).await.unwrap().unwrap().email,
+        "bob@example.com"
+    );
+
+    // A case-variant signup does not create a second account (stays enumeration-safe).
+    svc.signup("BOB@EXAMPLE.COM", "longpassword", &ctx())
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn change_password_invalidates_sessions() {
+    let (svc, mail) = setup().await;
+
+    svc.signup("c@d.com", "oldpassword", &ctx()).await.unwrap();
+    svc.verify_email(&mail.token(), &ctx()).await.unwrap();
+    let session = svc.login("c@d.com", "oldpassword", &ctx()).await.unwrap();
+    let user = svc
+        .authenticate(&session)
+        .await
+        .unwrap()
+        .expect("session valid");
+
+    // Wrong current password is rejected.
+    assert!(matches!(
+        svc.change_password(user.id, "wrong", "newpassword").await,
+        Err(AuthError::InvalidCredentials)
+    ));
+
+    svc.change_password(user.id, "oldpassword", "newpassword")
+        .await
+        .unwrap();
     assert!(svc.authenticate(&session).await.unwrap().is_none());
     assert!(matches!(
         svc.login("c@d.com", "oldpassword", &ctx()).await,
